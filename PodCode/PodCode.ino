@@ -263,7 +263,7 @@ void loop()
     }
     
     if (panicCounter == MAX_PANIC_COUNT) {
-      panic();
+      panicMode();
     }
     blink();
   }
