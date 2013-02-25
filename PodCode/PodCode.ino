@@ -94,7 +94,7 @@ void sendMessage(int podID, int message) {
   int newMessage = 0;
   writeData(newMessage, podID, 0, 4);
   writeData(newMessage, message, 4, 4);
-  Serial.print(newMessage);
+  Serial.write(newMessage);
 }
   
 //Example of reading data:
