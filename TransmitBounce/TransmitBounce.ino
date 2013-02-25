@@ -1,8 +1,5 @@
-//POD ID
-#define POD_ID 1
-
-#define MAX_PANIC_COUNT 10
-
+//Transmit bounce:
+//Counterpart to transmit test - simply bounces the received message back.
 
 // Message protocol
 /**
@@ -20,6 +17,7 @@ int FIELD_SIZES[2] = {4, 4}; //Each field is 4 bits in size.
 #define ACTIVATE 2 //Hub tells pod to turn on.
 #define FOUND 3    //Pod tells hub that it's been pressed.
 #define PANIC 4    //Hub tells pod to panic - start blinking and beeping loudly.
+#define OFF 5      //Hub tells pod to turn off
 
 //Reserve 13-15 for battery life?
 #define LOW_BAT = 13
@@ -125,166 +123,50 @@ bool sendMessageUntilAcknowledged(int podID, int message, int ntimes, int delaym
 
 
 
+int selfID = 2;
+
+int ledPin = 11;
 
 
-
-
-
-/*
-  Global Variables
-*/
-
-int panicCounter;
-
-int DELAY_TIME 500
-
-int ledPin;
-int buttonPin;
-int speakerOut;
-
-/**
-  Function: blinkTime(int delayms, int ledPin)
-  Turns an LED on and off for a given delay time.
-  Returns: void
-*/
-
-void blinkTime(int delayms, int ledPin) {
-  digitalWrite(ledPin, HIGH);
-  delay(delayms);
-  digitalWrite(ledPin, LOW);
-  delay(delayms);
-}
-
-// PLAY TONE  ==============================================
-
-/**
-  Function: playTone(int tone_, int beat, int duration)
-  Plays a tone to the speaker.
-  Returns: void
-*/
-void playTone(int tone_, int beat, int duration, int speakerOut) {
-  long elapsed_time = 0;
-  if (tone_ > 0) { // if this isn't a Rest beat, while the tone has 
-    //  played less long than 'duration', pulse speaker HIGH and LOW
-    while (elapsed_time < duration) {
-      digitalWrite(speakerOut,HIGH);
-      delayMicroseconds(tone_ / 2);
-
-      // DOWN
-      digitalWrite(speakerOut, LOW);
-      delayMicroseconds(tone_ / 2);
-
-      // Keep track of how long we pulsed
-      elapsed_time += (tone_);
-    } 
-  }
-  else { // Rest beat; loop times delay
-    for (int j = 0; j < rest_count; j++) { // See NOTE on rest_count
-      delayMicroseconds(duration);  
-    }                                
-  }                                 
-}
-
-// Plays when button is pressed.
-void foundSong(int tempo) {
-  for (int i=0; i<MAX_COUNT; i++) {
-    int tone_ = melody[i];
-    int beat = beats[i];
-
-    int duration = beat * tempo; // Set up timing
-
-    playTone(tone_, beat, duration); 
-    // A pause between notes...
-    delayMicroseconds(pause);
-  }
-}
-
-// Plays Panic alarm when puck is not found
-void playPanicSong(int tempo) {
-  for (int i=0; i<3; i++) {
-    int tone_ = melody[i];
-    int beat = panicBeats[i];
-
-    int duration = beat * tempo; // Set up timing
-
-    playTone(tone_, beat, duration); 
-    // A pause between notes...
-    delayMicroseconds(pause);
-  }
-}
-
-void onMode() {
-  while (true) {
-    if (Serial.available() > 0) {
-      int incoming = Serial.read();
-      int *data = readData(incoming, NUM_FIELDS, FIELD_SIZES);
-      int podID = data[0];
-      int message = data[1];
-      free(data);
-    }
-    switch (message) {
-      case OK:
-        sendMessage(POD_ID, OK); 
-        break;
-      case OFF:
-        return; //Stop being on.
-      case PANIC:
-        panic();
-        break;
-    }
-    blinkTime(DELAY_TIME);
-    beep();
-    digitalRead(buttonPin);
-    if (buttonState != 1) break; //if button is pressed
-  }
-  foundSong(); //pressed the button. Found the puck!
-}
-
-
-void setup()
-{
+void setup() {
   Serial.begin(9600);
-  pinMode(ledPin, OUTPUT);
-  pinMode(buttonPin, INPUT);
-  pinMode(speakerOut, OUTPUT);
-  
-  panicCounter = 0;
+  pinMode(ledPin, OUTPUT); 
 }
 
-void loop()
-{
+void loop() {
   if (Serial.available() > 0) {
     int incoming = Serial.read();
+//    Serial.println(incoming);
     int *data = readData(incoming, NUM_FIELDS, FIELD_SIZES);
     int podID = data[0];
     int message = data[1];
-    delete[] data;
+    free(data);
     
-    if (podID == POD_ID) {
+//    Serial.println(podID);
+//    Serial.println(message);
+    if (podID == selfID) {
       switch (message) {
-        case OK:     //Request for acknowledgement
-          sendMessage(POD_ID, OK); 
+        case OK:
+          tone(9, 440, 200);
+          Serial.print("OK");
           break;
         case ACTIVATE:
-          //Activate!
-          onMode();
-          //Send word that I've been pressed!
-          sendMessage(POD_ID, FOUND);
+          Serial.print("ACTIVATE");
+          break;      
+        case FOUND:
+          Serial.print("FOUND");
+          break;      
+        case PANIC:
+          Serial.print("PANIC");
+          break;
+        case OFF:
+          Serial.print("OFF");
           break;
         default:
-          if (panicCounter < MAX_PANIC_COUNT) {
-            panicCounter++;
-          }
           break;
       }
     }
-    
-    if (panicCounter == MAX_PANIC_COUNT) {
-      panicMode();
-    }
-    blink();
+//    int nextMessage = message; //Bounces the received message back again.
+//    sendMessage(sendingPod, nextMessage);
   }
 }
-
-
-
