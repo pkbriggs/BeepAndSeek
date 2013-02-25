@@ -1,3 +1,10 @@
+#include "pitches.h"
+
+//Speaker melodies:
+int marioNotes[] = {NOTE_E5, NOTE_E5, NOTE_E5, NOTE_C5, NOTE_E5, NOTE_G5};
+int marioNotesLength = 6;
+int noteDurations[] = {16, 8, 8, 16, 8, 4, 4};
+
 //POD ID
 #define POD_ID 1
 
@@ -136,7 +143,7 @@ bool sendMessageUntilAcknowledged(int podID, int message, int ntimes, int delaym
 
 int panicCounter;
 
-int DELAY_TIME 500
+int DELAY_TIME 500;
 
 int ledPin;
 int buttonPin;
@@ -155,61 +162,20 @@ void blinkTime(int delayms, int ledPin) {
   delay(delayms);
 }
 
-// PLAY TONE  ==============================================
-
-/**
-  Function: playTone(int tone_, int beat, int duration)
-  Plays a tone to the speaker.
-  Returns: void
-*/
-void playTone(int tone_, int beat, int duration, int speakerOut) {
-  long elapsed_time = 0;
-  if (tone_ > 0) { // if this isn't a Rest beat, while the tone has 
-    //  played less long than 'duration', pulse speaker HIGH and LOW
-    while (elapsed_time < duration) {
-      digitalWrite(speakerOut,HIGH);
-      delayMicroseconds(tone_ / 2);
-
-      // DOWN
-      digitalWrite(speakerOut, LOW);
-      delayMicroseconds(tone_ / 2);
-
-      // Keep track of how long we pulsed
-      elapsed_time += (tone_);
-    } 
-  }
-  else { // Rest beat; loop times delay
-    for (int j = 0; j < rest_count; j++) { // See NOTE on rest_count
-      delayMicroseconds(duration);  
-    }                                
-  }                                 
-}
 
 // Plays when button is pressed.
-void foundSong(int tempo) {
-  for (int i=0; i<MAX_COUNT; i++) {
+void playSong(int speakerPin, int *melody, int melodyLength, int *beats) {
+  for (int i=0; i < melodyLength; i++) {
     int tone_ = melody[i];
     int beat = beats[i];
 
-    int duration = beat * tempo; // Set up timing
+    int duration = 1000 / beat; 
 
-    playTone(tone_, beat, duration); 
+    tone(speakerPin, tone_, duration);
     // A pause between notes...
-    delayMicroseconds(pause);
-  }
-}
-
-// Plays Panic alarm when puck is not found
-void playPanicSong(int tempo) {
-  for (int i=0; i<3; i++) {
-    int tone_ = melody[i];
-    int beat = panicBeats[i];
-
-    int duration = beat * tempo; // Set up timing
-
-    playTone(tone_, beat, duration); 
-    // A pause between notes...
-    delayMicroseconds(pause);
+    int pauseBetweenNotes = duration * 1.30;
+    delay(pauseBetweenNotes);
+    noTone(speakerPin);
   }
 }
 
