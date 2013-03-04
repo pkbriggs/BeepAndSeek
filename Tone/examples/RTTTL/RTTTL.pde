@@ -7,7 +7,7 @@
 // You can get more RTTTL (RingTone Text Transfer Language) songs from
 // http://code.google.com/p/rogue-code/wiki/ToneLibraryDocumentation
 
-#include "Tone.h"
+#include <Tone.h>
 
 Tone tone1;
 
