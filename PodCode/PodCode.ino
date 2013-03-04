@@ -1,38 +1,38 @@
+#include <Messages.h>
 #include "pitches.h"
-#include "messages.h"
+/*
+ Pod Code
+ Code that will end up going into the pods for the game BeepAndSeek
+*/
 
-//Speaker melodies:
-int marioNotes[] = {NOTE_E5, NOTE_E5, NOTE_E5, NOTE_C5, NOTE_E5, NOTE_G5};
-int marioNotesLength = 6;
-int marioBeats[] = {16, 8, 8, 16, 8, 4, 4}
 
 /*
   Global Variables
 */
 
+//ID for this pod (CHANGE WHEN UPLOADING CODE TO DIFFERENT PODS)
+int POD_ID = 1;
+
+//Speaker melodies:
+int marioNotes[] = {NOTE_E5, NOTE_E5, NOTE_E5, NOTE_C5, NOTE_E5, NOTE_G5};
+int marioNotesLength = 6;
+int marioBeats[] = {16, 8, 8, 16, 8, 4, 4};
+
+//Counts the number of loops that have gone by without a signal from the hub.
 int panicCounter;
 
-int DELAY_TIME 500;
+//Pins for IO objects
+int ledPin = 11;
+int buttonPin = 10;
+int speakerPin = 9;
 
-int ledPin;
-int buttonPin;
-int speakerOut;
 
-/**
-  Function: blinkTime(int delayms, int ledPin)
-  Turns an LED on and off for a given delay time.
-  Returns: void
+/*
+  Function: playSong(int speakerPin, int *melody, int melodyLength, int *beats)
+  Plays the specified song (which is specified fully with a melody array, a beats
+  array, and the number of notes in the melody (melodylength)). 
+  Copied mostly from http://arduino.cc/en/Tutorial/tone
 */
-
-void blinkTime(int delayms, int ledPin) {
-  digitalWrite(ledPin, HIGH);
-  delay(delayms);
-  digitalWrite(ledPin, LOW);
-  delay(delayms);
-}
-
-
-// Plays when button is pressed.
 void playSong(int speakerPin, int *melody, int melodyLength, int *beats) {
   for (int i=0; i < melodyLength; i++) {
     int tone_ = melody[i];
@@ -48,6 +48,16 @@ void playSong(int speakerPin, int *melody, int melodyLength, int *beats) {
   }
 }
 
+/*
+  Function: onMode()
+  Contains the main loop that runs when the pod is activated and waiting for
+  its button to be pressed.
+  The pod maintains a lit LED and reads the serial port for incoming messages
+  from the pod that let it know that it's still connected to the hub. 
+  When the button is pressed (checked with the proper debouncing) the loop
+  breaks the the function returns with a song.
+  Returns: void  
+*/
 
 void onMode() {
   int buttonState = digitalRead(buttonPin);
@@ -65,7 +75,9 @@ void onMode() {
     }
     switch (message) {
       case OK:
-        sendMessage(POD_ID, OK); 
+        sendMessage(POD_ID, OK);
+        //Reset panic counter:
+        panicCounter = 0;  
         break;
       case OFF:
         return; //Stop being on.
@@ -73,10 +85,9 @@ void onMode() {
         panic();
         break;
     }
-//    blinkTime(DELAY_TIME);
     digitalWrite(ledPin, HIGH); //Turn the LED on
     //Beep:
-    tone(speakerPin, 440, 250);
+    tone(speakerPin, 440, 100);
     //Debounce testing:
     reading = digitalRead(buttonPin);
     if (reading != lastButtonState) lastDebounceTime = millis();
@@ -91,7 +102,7 @@ void setup()
   Serial.begin(9600);
   pinMode(ledPin, OUTPUT);
   pinMode(buttonPin, INPUT);
-  pinMode(speakerOut, OUTPUT);
+  pinMode(speakerPin, OUTPUT);
   
   panicCounter = 0;
 }
