@@ -14,6 +14,9 @@
 //ID for this pod (CHANGE WHEN UPLOADING CODE TO DIFFERENT PODS)
 int POD_ID = 1;
 
+//Number of times to wait before panicking:
+int MAX_PANIC_COUNT = 20;
+
 //Speaker melodies:
 int marioNotes[] = {
   NOTE_E5, NOTE_E5, NOTE_E5, NOTE_C5, NOTE_E5, NOTE_G5};
@@ -66,9 +69,12 @@ void panic() {
       int podID = data[0];
       int message = data[1];
       free(data);
-      if (podID == POD_ID) return; //We got a message
+      if (podID == POD_ID) {
+        panicCounter = 0;
+        return; //We got a message
+      }
     }
-    tone(speakerPin, 440, 100);
+    tone(speakerPin, 440, 20);
     digitalWrite(ledPin, HIGH);
     delay(50);
     digitalWrite(ledPin, LOW);
@@ -88,7 +94,6 @@ void panic() {
 
 void onMode() {
   int lastButtonState = digitalRead(buttonPin);
-  int reading;
   int DEBOUNCE_TIME = 50; //ms
   int lastDebounceTime = millis();
 
@@ -100,23 +105,24 @@ void onMode() {
       int message = data[1];
       free(data);
       switch (message) {
-      case OK:
-        sendMessage(POD_ID, OK);
-        //Reset panic counter:
-        panicCounter = 0;  
-        break;
-      case OFF:
-        return; //Stop being on.
-      case PANIC:
-        panic();
-        break;
+        case OK:
+          sendMessage(POD_ID, OK);
+          //Reset panic counter:
+          panicCounter = 0;  
+          break;
+        case OFF:
+          sendMessage(POD_ID, OK);
+          return; //Stop being on.
+        case PANIC:
+          panic();
+          break;
       }
     }
     digitalWrite(ledPin, HIGH); //Turn the LED on
     //Beep:
     tone(speakerPin, 440, 100);
     //Debounce testing:
-    reading = digitalRead(buttonPin);
+    int reading = digitalRead(buttonPin);
     if (reading != lastButtonState) lastDebounceTime = millis();
     if ((millis() - lastDebounceTime) > DEBOUNCE_TIME) break; //Button was pressed, leave the loop.
   }
@@ -141,7 +147,7 @@ void loop()
     int *data = readData(incoming, NUM_FIELDS, FIELD_SIZES);
     int podID = data[0];
     int message = data[1];
-    delete data;
+    free(data);
 
     if (podID == POD_ID) {
       switch (message) {
@@ -149,23 +155,32 @@ void loop()
         sendMessage(POD_ID, OK); 
         break;
       case ACTIVATE:
+        sendMessage(POD_ID, OK);
         //Activate!
         onMode();
         //Send word that I've been pressed!
         sendMessage(POD_ID, FOUND);
         break;
+      case OFF:
+        sendMessage(POD_ID, OK);
+        return; //Stop being on.
+      case PANIC:
+        panic();
+        break;
       default:
-        if (panicCounter < MAX_PANIC_COUNT) {
-          panicCounter++;
-        }
         break;
       }
     }
-
-    if (panicCounter == MAX_PANIC_COUNT) {
-      panic();
-    }
+    panicCounter = 0; //Reset panic counter because we received a message,
+                      //even if it wasn't for us.
   }
+  if (panicCounter < MAX_PANIC_COUNT) {
+    panicCounter++;
+  }
+  else if (panicCounter == MAX_PANIC_COUNT) {
+    panic();
+  }
+  delay(250); //wait
 }
 
 

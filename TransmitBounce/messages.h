@@ -28,6 +28,8 @@ int FIELD_SIZES[2] = {4, 4};
 //Used for encoding messages
 #define BITS_PER_BYTE 8
 
+//Used for deciding whether or not to enter panic mode
+#define MAX_PANIC_COUNT 10
 
 
 
