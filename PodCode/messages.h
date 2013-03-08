@@ -110,10 +110,25 @@ void sendMessage(int podID, int message) {
 /**
  Function: sendMessageUntilAcknowledged(int podID, int message, int ntimes)
  Sends a message with a given podID and message ntimes, or until an acknowledgement is received, with a given delay in between.
+ If ntimes is -1, will send the message forever, until it gets an acknowledgement.
  Return: bool - whether or not the message was acknowledged
  */
 bool sendMessageUntilAcknowledged(int podID, int message, int ntimes, int delayms) {
     int received = -1;
+    
+    if (ntimes == -1) { //Send the message forever, until you get a response
+      while (true) {
+        sendMessage(podID, message);
+        delay(delayms);
+        if (Serial.available() > 0) {
+            received = Serial.read();
+            int *data = readData(received, NUM_FIELDS, FIELD_SIZES);
+            if (data[1] == OK) return true; //Received an acknowledgement.
+        }
+      }
+    }
+    
+    
     for (int i = 0; i < ntimes; i++) {
         sendMessage(podID, message);
         delay(delayms);

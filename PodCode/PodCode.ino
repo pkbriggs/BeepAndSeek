@@ -18,11 +18,9 @@ int POD_ID = 1;
 int MAX_PANIC_COUNT = 20;
 
 //Speaker melodies:
-int marioNotes[] = {
-  NOTE_E5, NOTE_E5, NOTE_E5, NOTE_C5, NOTE_E5, NOTE_G5};
-int marioNotesLength = 6;
-int marioBeats[] = {
-  16, 8, 8, 16, 8, 4, 4};
+int marioNotes[] = {NOTE_C4, NOTE_F4};
+int marioNotesLength = 20;
+int marioBeats[] = {4, 4};
 
 //Counts the number of loops that have gone by without a signal from the hub.
 int panicCounter;
@@ -50,7 +48,6 @@ void playSong(int speakerPin, int *melody, int melodyLength, int *beats) {
     // A pause between notes...
     int pauseBetweenNotes = duration * 1.30;
     delay(pauseBetweenNotes);
-    noTone(speakerPin);
   }
 }
 
@@ -74,7 +71,7 @@ void panic() {
         return; //We got a message
       }
     }
-    tone(speakerPin, 440, 20);
+//    tone(speakerPin, 440, 20);
     digitalWrite(ledPin, HIGH);
     delay(50);
     digitalWrite(ledPin, LOW);
@@ -93,8 +90,8 @@ void panic() {
  */
 
 void onMode() {
-  int lastButtonState = digitalRead(buttonPin);
-  int DEBOUNCE_TIME = 50; //ms
+//  int lastButtonState = HIGH;
+  int DEBOUNCE_TIME = 100; //ms
   int lastDebounceTime = millis();
 
   while (true) {
@@ -104,6 +101,8 @@ void onMode() {
       int podID = data[0];
       int message = data[1];
       free(data);
+      Serial.flush();
+      
       switch (message) {
         case OK:
           sendMessage(POD_ID, OK);
@@ -120,14 +119,22 @@ void onMode() {
     }
     digitalWrite(ledPin, HIGH); //Turn the LED on
     //Beep:
-    tone(speakerPin, 440, 100);
+    tone(speakerPin, NOTE_E6, 20);
     //Debounce testing:
     int reading = digitalRead(buttonPin);
-    if (reading != lastButtonState) lastDebounceTime = millis();
-    if ((millis() - lastDebounceTime) > DEBOUNCE_TIME) break; //Button was pressed, leave the loop.
+    if ((reading == LOW) && ((millis() - lastDebounceTime) > DEBOUNCE_TIME))
+    {
+      break;
+    }
+    else
+    {
+      lastDebounceTime = millis();
+    }
   }
-  playSong(speakerPin, marioNotes, marioNotesLength, marioBeats); //pressed the button. Found the puck!
+//  playSong(speakerPin, marioNotes, marioNotesLength, marioBeats); //pressed the button. Found the puck!
+
 }
+
 
 
 void setup()
@@ -135,6 +142,7 @@ void setup()
   Serial.begin(9600);
   pinMode(ledPin, OUTPUT);
   pinMode(buttonPin, INPUT);
+  digitalWrite(buttonPin, HIGH);
   pinMode(speakerPin, OUTPUT);
 
   panicCounter = 0;
@@ -148,39 +156,44 @@ void loop()
     int podID = data[0];
     int message = data[1];
     free(data);
+    Serial.flush();
 
     if (podID == POD_ID) {
       switch (message) {
-      case OK:     //Request for acknowledgement
-        sendMessage(POD_ID, OK); 
-        break;
-      case ACTIVATE:
-        sendMessage(POD_ID, OK);
-        //Activate!
-        onMode();
-        //Send word that I've been pressed!
-        sendMessage(POD_ID, FOUND);
-        break;
-      case OFF:
-        sendMessage(POD_ID, OK);
-        return; //Stop being on.
-      case PANIC:
-        panic();
-        break;
-      default:
-        break;
+        case OK:     //Request for acknowledgement
+          sendMessage(POD_ID, OK); 
+          break;
+        case ACTIVATE:
+          sendMessage(POD_ID, OK);
+          //Activate!
+          onMode();
+          //Send word that I've been pressed!
+          sendMessage(POD_ID, FOUND);
+          break;
+        case OFF:
+          sendMessage(POD_ID, OK);
+          break; //Stop being on.
+        case PANIC:
+          panic();
+          break;
+        default:
+          break;
       }
     }
     panicCounter = 0; //Reset panic counter because we received a message,
                       //even if it wasn't for us.
   }
-  if (panicCounter < MAX_PANIC_COUNT) {
-    panicCounter++;
-  }
-  else if (panicCounter == MAX_PANIC_COUNT) {
-    panic();
-  }
-  delay(250); //wait
+//  if (panicCounter < MAX_PANIC_COUNT) {
+//    panicCounter++;
+//  }
+//  else if (panicCounter == MAX_PANIC_COUNT) {
+//    panic();
+//  }
+  digitalWrite(ledPin, HIGH);
+  delay(500);
+  digitalWrite(ledPin, LOW);
+  delay(500);
+//  delay(250); //wait
 }
 
 
