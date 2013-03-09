@@ -12,7 +12,7 @@
  */
 
 //ID for this pod (CHANGE WHEN UPLOADING CODE TO DIFFERENT PODS)
-int POD_ID = 1;
+int POD_ID = 2;
 
 //Number of times to wait before panicking:
 int MAX_PANIC_COUNT = 20;
@@ -102,6 +102,8 @@ void onMode() {
       int message = data[1];
       free(data);
       Serial.flush();
+      //Debugging:
+//      Serial.println(incoming);
       
       switch (message) {
         case OK:
@@ -130,6 +132,7 @@ void onMode() {
     {
       lastDebounceTime = millis();
     }
+    delay(100);
   }
 //  playSong(speakerPin, marioNotes, marioNotesLength, marioBeats); //pressed the button. Found the puck!
 
@@ -164,11 +167,12 @@ void loop()
           sendMessage(POD_ID, OK); 
           break;
         case ACTIVATE:
-          sendMessage(POD_ID, OK);
+
+          sendMessageUntilAcknowledged(POD_ID, OK, 5, 200);
           //Activate!
           onMode();
           //Send word that I've been pressed!
-          sendMessage(POD_ID, FOUND);
+          sendMessageUntilAcknowledged(POD_ID, FOUND, 10, 500); //Send it 10 times.
           break;
         case OFF:
           sendMessage(POD_ID, OK);

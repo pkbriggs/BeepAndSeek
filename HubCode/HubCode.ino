@@ -7,12 +7,14 @@
 
 //Debugging:
 int ledPin = 11;
+int speakerPin = 9;
 
 /**
  * Global variables
  */
 bool needToActivatePod;
 int podToActivate;
+int activatedPod;
 int podToPing;
 
 unsigned long startTime;
@@ -38,6 +40,7 @@ void setup() {
 
   needToActivatePod = true;
   podToActivate = 1;
+  activatedPod = -1; //No activatedPod yet.
   podToPing = 1;
 
   startTime = millis(); 
@@ -49,7 +52,7 @@ void setup() {
 
 
 void loop() {
-  digitalWrite(ledPin, HIGH);
+//  digitalWrite(ledPin, HIGH);
   //Check if anything is in the buffer to be read:
   if (Serial.available() > 0) {
     int incoming = Serial.read();
@@ -57,15 +60,20 @@ void loop() {
     int podID = data[0];
     int message = data[1];
     free(data);
-    if (message == FOUND) {
+    Serial.flush();
+    
+//    Serial.print(incoming);
+    
+    if (message == FOUND && podID == activatedPod) {
       //If this is the last pod, exit the game.
-      if (podID == numPods) {
+      if (podID >= numPods) {
         float time = millis() - startTime / 1000.0;
 
-          while (true) {
-            Serial.println("Time:");
-            Serial.println(time);
-          }
+        while (true) {
+          Serial.println("Time:");
+          Serial.println(time);
+          tone(speakerPin, 440, 250);
+          delay(2000);
         } //Stop and wait for reset.
       }
       
@@ -73,6 +81,12 @@ void loop() {
         //Pod was found, activate next pod.
         needToActivatePod = true;
         podToActivate = podID + 1;
+      }
+    }
+    else {
+      tone(speakerPin, 440, 500);
+      delay(1000);
+      Serial.print(incoming);
     }
   }
 
@@ -93,6 +107,7 @@ void loop() {
 //    }
     digitalWrite(ledPin, LOW);
     needToActivatePod = false; //Reset flag
+    activatedPod = podToActivate;
   }
 
   //Ping the next pod we need to ping to ensure that it's still alive.
