@@ -167,10 +167,11 @@ void loop()
           sendMessage(POD_ID, OK); 
           break;
         case ACTIVATE:
-
+ 
           sendMessageUntilAcknowledged(POD_ID, OK, 5, 200);
           //Activate!
           onMode();
+          Serial.flush(); //Flush any remaining "activate" messages from the buffer
           //Send word that I've been pressed!
           sendMessageUntilAcknowledged(POD_ID, FOUND, 10, 500); //Send it 10 times.
           break;
