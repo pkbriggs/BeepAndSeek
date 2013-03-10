@@ -75,6 +75,7 @@ void panic() {
     digitalWrite(ledPin, HIGH);
     delay(50);
     digitalWrite(ledPin, LOW);
+    delay(50);
   }
 }
 
