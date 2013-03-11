@@ -1,6 +1,6 @@
 //#include <Messages.h>
 #include "pitches.h"
-#include "messages.h"
+#include "messages2.h"
 /*
  Pod Code
  Code that will end up going into the pods for the game BeepAndSeek
@@ -12,7 +12,7 @@
  */
 
 //ID for this pod (CHANGE WHEN UPLOADING CODE TO DIFFERENT PODS)
-int POD_ID = 2;
+int POD_ID = 7;
 
 //Number of times to wait before panicking:
 int MAX_PANIC_COUNT = 20;
@@ -24,6 +24,9 @@ int marioBeats[] = {4, 4};
 
 //Counts the number of loops that have gone by without a signal from the hub.
 int panicCounter;
+
+//Flag that tells whether the pod has previously been activated and then found.
+bool alreadyActivated;
 
 //Pins for IO objects
 int ledPin = 11;
@@ -62,10 +65,10 @@ void panic() {
   while (true) {
     if (Serial.available() > 0) {
       int incoming = Serial.read();
-      int *data = readData(incoming, NUM_FIELDS, FIELD_SIZES); //NUM_FIELDS and FIELD_SIZES from Messages.h       int podID = data[0];
+      //int *data = readData(incoming, NUM_FIELDS, FIELD_SIZES); //NUM_FIELDS and FIELD_SIZES from Messages.h
+      readData(incoming);
       int podID = data[0];
       int message = data[1];
-      free(data);
       if (podID == POD_ID) {
         panicCounter = 0;
         return; //We got a message
@@ -98,10 +101,9 @@ void onMode() {
   while (true) {
     if (Serial.available() > 0) {
       int incoming = Serial.read();
-      int *data = readData(incoming, NUM_FIELDS, FIELD_SIZES);
+      readData(incoming);
       int podID = data[0];
       int message = data[1];
-      free(data);
       Serial.flush();
       //Debugging:
 //      Serial.println(incoming);
@@ -112,8 +114,9 @@ void onMode() {
           //Reset panic counter:
           panicCounter = 0;  
           break;
-        case OFF:
+        case RESET:
           sendMessage(POD_ID, OK);
+          alreadyActivated = false;
           return; //Stop being on.
         case PANIC:
           panic();
@@ -150,34 +153,38 @@ void setup()
   pinMode(speakerPin, OUTPUT);
 
   panicCounter = 0;
+  alreadyActivated = false;
 }
 
 void loop()
 {
   if (Serial.available() > 0) {
     int incoming = Serial.read();
-    int *data = readData(incoming, NUM_FIELDS, FIELD_SIZES);
+    readData(incoming);
     int podID = data[0];
     int message = data[1];
-    free(data);
-    Serial.flush();
 
     if (podID == POD_ID) {
+      tone(speakerPin, 440, 100);
       switch (message) {
         case OK:     //Request for acknowledgement
+//          Serial.print("Sending OK message for pod #");
+//          Serial.println(podID);
           sendMessage(POD_ID, OK); 
           break;
         case ACTIVATE:
- 
-          sendMessageUntilAcknowledged(POD_ID, OK, 5, 200);
-          //Activate!
-          onMode();
-          Serial.flush(); //Flush any remaining "activate" messages from the buffer
-          //Send word that I've been pressed!
-          sendMessageUntilAcknowledged(POD_ID, FOUND, 10, 500); //Send it 10 times.
+          if (!alreadyActivated) {
+            alreadyActivated = true;
+            sendMessageUntilAcknowledged(POD_ID, OK, 5, 30);
+            //Activate!
+            onMode();
+            //Send word that I've been pressed!
+            sendMessageUntilAcknowledged(POD_ID, FOUND, 10, 30); //Send it 10 times.
+          }
           break;
-        case OFF:
+        case RESET:
           sendMessage(POD_ID, OK);
+          alreadyActivated = false;
           break; //Stop being on.
         case PANIC:
           panic();
@@ -185,6 +192,8 @@ void loop()
         default:
           break;
       }
+      Serial.flush(); //Flush any remaining  messages from the buffer
+
     }
     panicCounter = 0; //Reset panic counter because we received a message,
                       //even if it wasn't for us.
@@ -196,11 +205,12 @@ void loop()
 //    panic();
 //  }
   digitalWrite(ledPin, HIGH);
-  delay(500);
+  /*delay(500);
   digitalWrite(ledPin, LOW);
-  delay(500);
+  delay(500);*/
 //  delay(250); //wait
 }
+
 
 
 

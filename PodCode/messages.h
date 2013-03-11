@@ -98,6 +98,7 @@ void sendMessage(int podID, int message) {
     writeData(newMessage, podID, 0, 4);
     writeData(newMessage, message, 4, 4);
     Serial.write(newMessage);
+    Serial.println(newMessage);
 }
 
 //Example of reading data:
@@ -123,7 +124,7 @@ bool sendMessageUntilAcknowledged(int podID, int message, int ntimes, int delaym
         if (Serial.available() > 0) {
             received = Serial.read();
             int *data = readData(received, NUM_FIELDS, FIELD_SIZES);
-            if (data[0] == podID && data[1] == OK) return true; //Received an acknowledgement.
+            if (data[1] == OK) return true; //Received an acknowledgement.
         }
       }
     }
@@ -135,7 +136,7 @@ bool sendMessageUntilAcknowledged(int podID, int message, int ntimes, int delaym
         if (Serial.available() > 0) {
             received = Serial.read();
             int *data = readData(received, NUM_FIELDS, FIELD_SIZES);
-            if (data[0] == podID && data[1] == OK) return true; //Received an acknowledgement.
+            if (data[1] == OK) return true; //Received an acknowledgement.
         }
     }
     return false;
